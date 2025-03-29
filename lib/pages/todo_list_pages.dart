@@ -12,12 +12,25 @@ class TodoListPage extends StatefulWidget {
 
 class _TodoListPageState extends State<TodoListPage> {
   final TextEditingController todocontroller = TextEditingController();
-  //final TodoRepository todoRepository = TodoRepository();
+  final TodoRepository todoRepository = TodoRepository();
 
   List<Todo> todos = [];
 
   Todo? deletedTodo;
   int? deletedTodoPos;
+
+  String? errorText;
+
+  @override
+  void initState() {
+    super.initState();
+
+    todoRepository.getTodoList().then((value){
+        setState(() {
+          todos = value;
+        });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +50,18 @@ class _TodoListPageState extends State<TodoListPage> {
                       decoration: InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'Adicione uma tarefa',
-                          hintText: 'Ex: estudar dart'),
+                          hintText: 'Ex: estudar dart',
+                          errorText: errorText,
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Colors.blue,
+                              width: 2,
+                            )
+                          ),
+                          labelStyle: TextStyle(
+                            color: Colors.blue,
+                          )
+                          ),     
                     ),
                   ),
                   SizedBox(
@@ -49,15 +73,23 @@ class _TodoListPageState extends State<TodoListPage> {
                       child: ElevatedButton(
                       onPressed: () {
                         String text = todocontroller.text;
+
+                        if(text.isEmpty){
+                          setState(() {
+                            errorText = 'O título não pode ser vazio';
+                          });
+                          return;
+                        }
                         setState(() {
                           Todo newTodo = Todo(
                           title: text,
                            dateTime: DateTime.now(),
                           );
                           todos.add(newTodo);
+                          errorText = null;
                         });
                         todocontroller.clear();
-                        //todoRepository.saveTodoList(todos);
+                        todoRepository.saveTodoList(todos);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,  // Cor de fundo
@@ -131,6 +163,7 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       todos.remove(todo);
     });
+    todoRepository.saveTodoList(todos);
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text("Tarefa ${todo.title} excluída!"),
@@ -141,6 +174,7 @@ class _TodoListPageState extends State<TodoListPage> {
                       setState(() {
                         todos.insert(deletedTodoPos!, deletedTodo!);
                       });
+                      todoRepository.saveTodoList(todos);
                   }),
                   duration: Duration(seconds: 5),
                 ));
@@ -171,5 +205,6 @@ class _TodoListPageState extends State<TodoListPage> {
     setState(() {
       todos.clear();
     });
+    todoRepository.saveTodoList(todos);
   }
 }
